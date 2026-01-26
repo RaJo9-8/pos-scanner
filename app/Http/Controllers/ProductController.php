@@ -1,0 +1,186 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Product;
+use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Storage;
+use Yajra\DataTables\Facades\DataTables;
+
+class ProductController extends Controller
+{
+    public function index(Request $request)
+    {
+        if ($request->ajax()) {
+            $query = Product::query();
+            
+            if ($request->get('low_stock')) {
+                $query->where('stock', '<=', 'min_stock');
+            }
+            
+            return DataTables::of($query)
+                ->addColumn('action', function ($product) {
+                    $buttons = '';
+                    
+                    if (auth()->user()->level <= 3) {
+                        $buttons .= '<a href="' . route('products.edit', $product) . '" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>';
+                        $buttons .= '<button type="button" class="btn btn-sm btn-danger delete-product" data-id="' . $product->id . '"><i class="fas fa-trash"></i></button>';
+                    }
+                    
+                    $buttons .= '<a href="' . route('products.show', $product) . '" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>';
+                    
+                    return $buttons;
+                })
+                ->addColumn('stock_status', function ($product) {
+                    if ($product->isLowStock()) {
+                        return '<span class="badge badge-danger">Low Stock</span>';
+                    }
+                    return '<span class="badge badge-success">In Stock</span>';
+                })
+                ->addColumn('formatted_purchase_price', function ($product) {
+                    return $product->formatted_purchase_price;
+                })
+                ->addColumn('formatted_selling_price', function ($product) {
+                    return $product->formatted_selling_price;
+                })
+                ->addColumn('profit', function ($product) {
+                    return $product->formatted_profit;
+                })
+                ->rawColumns(['action', 'stock_status'])
+                ->make(true);
+        }
+
+        return view('products.index');
+    }
+
+    public function create()
+    {
+        return view('products.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'barcode' => 'required|string|unique:products,barcode',
+            'description' => 'nullable|string',
+            'purchase_price' => 'required|numeric|min:0',
+            'selling_price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'min_stock' => 'required|integer|min:0',
+            'unit' => 'required|string|max:50',
+            'category' => 'nullable|string|max:100',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->storeAs('products', $imageName, 'public');
+            $data['image'] = 'products/' . $imageName;
+        }
+
+        $product = Product::create($data);
+
+        ActivityLog::log('create', 'product', "Created product: {$product->name}", null, $data);
+
+        return redirect()->route('products.index')->with('success', 'Product created successfully');
+    }
+
+    public function show(Product $product)
+    {
+        return view('products.show', compact('product'));
+    }
+
+    public function edit(Product $product)
+    {
+        return view('products.edit', compact('product'));
+    }
+
+    public function update(Request $request, Product $product)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'barcode' => 'required|string|unique:products,barcode,' . $product->id,
+            'description' => 'nullable|string',
+            'purchase_price' => 'required|numeric|min:0',
+            'selling_price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'min_stock' => 'required|integer|min:0',
+            'unit' => 'required|string|max:50',
+            'category' => 'nullable|string|max:100',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $oldData = $product->toArray();
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->storeAs('products', $imageName, 'public');
+            $data['image'] = 'products/' . $imageName;
+        }
+
+        $product->update($data);
+
+        ActivityLog::log('update', 'product', "Updated product: {$product->name}", $oldData, $data);
+
+        return redirect()->route('products.index')->with('success', 'Product updated successfully');
+    }
+
+    public function destroy(Product $product)
+    {
+        $productData = $product->toArray();
+        $product->delete();
+
+        ActivityLog::log('delete', 'product', "Deleted product: {$product->name}", $productData, null);
+
+        return response()->json(['success' => 'Product deleted successfully']);
+    }
+
+    public function trashed()
+    {
+        $products = Product::onlyTrashed()->get();
+        return view('products.trashed', compact('products'));
+    }
+
+    public function restore($id)
+    {
+        $product = Product::onlyTrashed()->findOrFail($id);
+        $product->restore();
+
+        ActivityLog::log('restore', 'product', "Restored product: {$product->name}");
+
+        return redirect()->route('products.trashed')->with('success', 'Product restored successfully');
+    }
+
+    public function search(Request $request)
+    {
+        $search = $request->get('q');
+        $products = Product::where('name', 'like', "%{$search}%")
+            ->orWhere('barcode', 'like', "%{$search}%")
+            ->limit(10)
+            ->get(['id', 'name', 'barcode', 'selling_price', 'stock']);
+
+        return response()->json($products);
+    }
+
+    public function findByBarcode($barcode)
+    {
+        $product = Product::where('barcode', $barcode)->first();
+        
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
+
+        return response()->json($product);
+    }
+}
