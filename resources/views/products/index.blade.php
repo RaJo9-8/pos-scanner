@@ -3,6 +3,10 @@
 @section('title', 'Products')
 @section('breadcrumb', 'Products')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+@endpush
+
 @section('content')
 <div class="row">
     <div class="col-12">
@@ -48,6 +52,9 @@
 @endsection
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
 <script>
 $(document).ready(function() {
     $('#products-table').DataTable({
@@ -56,14 +63,7 @@ $(document).ready(function() {
         ajax: '{{ route("products.index") }}',
         columns: [
             {data: 'id', name: 'id'},
-            {data: 'image', name: 'image', orderable: false, searchable: false,
-                render: function(data) {
-                    if (data) {
-                        return '<img src="{{ asset("storage") }}/' + data + '" width="50" height="50">';
-                    }
-                    return '<img src="{{ asset("dist/img/default-150x150.png") }}" width="50" height="50">';
-                }
-            },
+            {data: 'image', name: 'image', orderable: false, searchable: false},
             {data: 'name', name: 'name'},
             {data: 'barcode', name: 'barcode'},
             {data: 'category', name: 'category'},
@@ -98,5 +98,69 @@ $(document).ready(function() {
         }
     });
 });
+
+// Function to show image modal
+function showImageModal(imageSrc, productName) {
+    // Create modal HTML
+    const modalHtml = `
+        <div class="modal fade" id="imageModal" tabindex="-1" role="dialog" style="display: none;">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Product Image: ${productName}</h5>
+                        <button type="button" class="close" onclick="closeImageModal()" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img src="${imageSrc}" alt="${productName}" class="img-fluid" style="max-height: 500px;">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeImageModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('imageModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = document.getElementById('imageModal');
+    modal.style.display = 'block';
+    modal.classList.add('show');
+    document.body.classList.add('modal-open');
+    
+    // Add backdrop
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade show';
+    backdrop.id = 'imageModalBackdrop';
+    document.body.appendChild(backdrop);
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    const backdrop = document.getElementById('imageModalBackdrop');
+    
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        setTimeout(() => modal.remove(), 200);
+    }
+    
+    if (backdrop) {
+        backdrop.classList.remove('show');
+        setTimeout(() => backdrop.remove(), 200);
+    }
+    
+    document.body.classList.remove('modal-open');
+}
 </script>
 @endpush

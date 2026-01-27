@@ -9,6 +9,8 @@ use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\StockInController;
+use App\Http\Controllers\StockOutController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -19,7 +21,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/profile', [AuthController::class, 'showProfile'])->name('profile');
     Route::put('/profile', [AuthController::class, 'updateProfile'])->name('profile.update');
@@ -30,17 +32,76 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/sales-data', [DashboardController::class, 'getSalesData'])->name('api.sales-data');
     Route::get('/api/profit-data', [DashboardController::class, 'getProfitData'])->name('api.profit-data');
 
+    Route::get('/products/trashed', [ProductController::class, 'trashed'])->name('products.trashed')->middleware('level:1');
+
+    // Pindahkan route users/trashed ke sini untuk testing
+    Route::get('/users/trashed', [UserController::class, 'trashed'])->name('users.trashed')->middleware('level:1,2');
+
+    Route::middleware('level:1')->group(function() {
+        Route::get('/test-delete-user', function() {
+            $user = \App\Models\User::find(4);
+            if ($user) {
+                $user->delete();
+                return "User {$user->name} deleted! Trashed count: " . \App\Models\User::onlyTrashed()->count();
+            }
+            return "User not found";
+        });
+
+        Route::get('/test-restore-user', function() {
+            $user = \App\Models\User::onlyTrashed()->first();
+            if ($user) {
+                $user->restore();
+                return "User {$user->name} restored! Trashed count: " . \App\Models\User::onlyTrashed()->count();
+            }
+            return "No trashed users found";
+        });
+    });
+
     Route::middleware('level:1,2')->group(function () {
         Route::resource('users', UserController::class);
-        Route::get('/users/{user}/restore', [UserController::class, 'restore'])->name('users.restore');
+        Route::post('/users/{user}/restore', [UserController::class, 'restore'])->name('users.restore');
+        
+        // Test route untuk debugging
+        Route::get('/debug-users-trashed', function() {
+            $authStatus = auth()->check() ? 'Logged in as: ' . auth()->user()->name : 'Not logged in';
+            $userLevel = auth()->check() ? auth()->user()->level : 'N/A';
+            $users = \App\Models\User::onlyTrashed()->get();
+            $result = [
+                'auth_status' => $authStatus,
+                'user_level' => $userLevel,
+                'trashed_count' => $users->count(),
+                'users' => []
+            ];
+            foreach($users as $user) {
+                $result['users'][] = [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'level' => $user->level,
+                    'deleted_at' => $user->deleted_at
+                ];
+            }
+            return response()->json($result);
+        });
     });
 
     Route::middleware('level:1,2,3')->group(function () {
         Route::resource('products', ProductController::class);
-        Route::get('/products/{product}/restore', [ProductController::class, 'restore'])->name('products.restore');
-        Route::get('/products/trashed', [ProductController::class, 'trashed'])->name('products.trashed');
         Route::get('/api/products/search', [ProductController::class, 'search'])->name('api.products.search');
         Route::get('/api/products/barcode/{barcode}', [ProductController::class, 'findByBarcode'])->name('api.products.barcode');
+        
+        // Stock Management Routes
+        Route::resource('stock-in', StockInController::class);
+        Route::resource('stock-out', StockOutController::class);
+        Route::get('/stock-in/get-product/{id}', [StockInController::class, 'getProduct'])->name('stock-in.get-product');
+        Route::get('/stock-out/get-product/{id}', [StockOutController::class, 'getProduct'])->name('stock-out.get-product');
+    });
+
+    Route::middleware('level:1')->group(function () {
+        Route::post('/products/{product}/restore', [ProductController::class, 'restore'])->name('products.restore');
+        Route::get('/test-trashed', function() {
+            return 'Trashed route working!';
+        });
     });
 
     Route::middleware('level:3,4')->group(function () {

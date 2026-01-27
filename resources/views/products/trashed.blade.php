@@ -43,13 +43,19 @@
                                 <td>{{ $product->formatted_selling_price }}</td>
                                 <td>{{ $product->deleted_at->format('d M Y H:i') }}</td>
                                 <td>
-                                    @if(auth()->user()->isSuperAdmin())
-                                    <form action="{{ route('products.restore', $product->id) }}" method="POST" style="display: inline;">
-                                        @csrf
-                                        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Are you sure you want to restore this product?')">
-                                            <i class="fas fa-undo"></i> Restore
-                                        </button>
-                                    </form>
+                                    @if(auth()->check())
+                                        @if(auth()->user()->isSuperAdmin())
+                                        <form action="{{ route('products.restore', $product->id) }}" method="POST" style="display: inline;">
+                                            @csrf
+                                            <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Are you sure you want to restore this product?')">
+                                                <i class="fas fa-undo"></i> Restore
+                                            </button>
+                                        </form>
+                                        @else
+                                            <span class="text-muted">No access</span>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">Not logged in</span>
                                     @endif
                                 </td>
                             </tr>
