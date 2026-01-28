@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -80,7 +81,7 @@ class User extends Authenticatable
 
     public function isSuperAdmin()
     {
-        return $this->level === 1;
+        return (int)$this->level === 1;
     }
 
     public function isAdmin()
@@ -103,6 +104,16 @@ class User extends Authenticatable
         return $this->level === 5;
     }
 
+    public function canViewProducts()
+    {
+        return in_array($this->level, [1, 2, 3, 4, 5]);
+    }
+
+    public function canManageProducts()
+    {
+        return in_array($this->level, [1, 2, 3]);
+    }
+
     public function canAccessAllData()
     {
         return in_array($this->level, [1, 2]);
@@ -121,6 +132,11 @@ class User extends Authenticatable
     public function canViewReports()
     {
         return $this->level === 5;
+    }
+
+    public function canViewActivityLogs()
+    {
+        return in_array($this->level, [1, 2, 5]);
     }
 
     public function canRestoreDeletedData()

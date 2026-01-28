@@ -20,10 +20,16 @@ class ProductController extends Controller
             }
             
             return DataTables::of($query)
+                ->addColumn('image', function ($product) {
+                    if ($product->image) {
+                        return '<img src="' . asset('storage/' . $product->image) . '" width="50" height="50" class="product-image" style="cursor: pointer;" onclick="showImageModal(\'' . asset('storage/' . $product->image) . '\', \'' . $product->name . '\')">';
+                    }
+                    return '<img src="' . asset('dist/img/default-150x150.png') . '" width="50" height="50" class="product-image" style="cursor: pointer;" onclick="showImageModal(\'' . asset('dist/img/default-150x150.png') . '\', \'Default Image\')">';
+                })
                 ->addColumn('action', function ($product) {
                     $buttons = '';
                     
-                    if (auth()->user()->level <= 3) {
+                    if (auth()->user()->canManageProducts()) {
                         $buttons .= '<a href="' . route('products.edit', $product) . '" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>';
                         $buttons .= '<button type="button" class="btn btn-sm btn-danger delete-product" data-id="' . $product->id . '"><i class="fas fa-trash"></i></button>';
                     }
@@ -47,7 +53,7 @@ class ProductController extends Controller
                 ->addColumn('profit', function ($product) {
                     return $product->formatted_profit;
                 })
-                ->rawColumns(['action', 'stock_status'])
+                ->rawColumns(['action', 'stock_status', 'image', 'profit'])
                 ->make(true);
         }
 
@@ -148,7 +154,14 @@ class ProductController extends Controller
 
     public function trashed()
     {
+        // Debug: Log untuk melihat apakah method ini dipanggil
+        \Log::info('Trashed method called');
+        
         $products = Product::onlyTrashed()->get();
+        
+        // Debug: Log jumlah produk yang dihapus
+        \Log::info('Trashed products count: ' . $products->count());
+        
         return view('products.trashed', compact('products'));
     }
 

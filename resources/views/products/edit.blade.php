@@ -35,7 +35,15 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="barcode">Barcode <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control @error('barcode') is-invalid @enderror" id="barcode" name="barcode" value="{{ old('barcode', $product->barcode) }}" required>
+                                <div class="input-group">
+                                    <input type="text" class="form-control @error('barcode') is-invalid @enderror" id="barcode" name="barcode" value="{{ old('barcode', $product->barcode) }}" placeholder="Scan barcode dengan hardware scanner" required>
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-info" onclick="generateBarcode()">
+                                            <i class="fas fa-barcode"></i> Generate
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="text-muted">Gunakan barcode scanner hardware (USB/Bluetooth) atau ketik manual</small>
                                 @error('barcode')
                                     <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
                                 @enderror
@@ -168,13 +176,40 @@
 @endsection
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script>
+function generateBarcode() {
+    var date = new Date();
+    var timestamp = date.getTime();
+    var random = Math.floor(Math.random() * 1000);
+    var barcode = 'PRD' + timestamp.toString().slice(-6) + random.toString().padStart(3, '0');
+    document.getElementById('barcode').value = barcode;
+}
+
 function calculateProfit() {
     var purchasePrice = parseFloat(document.getElementById('purchase_price').value) || 0;
     var sellingPrice = parseFloat(document.getElementById('selling_price').value) || 0;
     var profit = sellingPrice - purchasePrice;
     document.getElementById('profit_display').value = 'Rp ' + profit.toLocaleString('id-ID');
 }
+
+// Hardware Scanner Support
+document.getElementById('barcode').addEventListener('keypress', function(e) {
+    if (e.which === 13) { // Enter key
+        e.preventDefault();
+        var barcode = this.value;
+        if (barcode.length > 0) {
+            // Show success message
+            var alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show';
+            alert.innerHTML = `
+                <strong>Berhasil!</strong> Barcode ${barcode} berhasil di-input.
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            `;
+            document.querySelector('.card-body').insertBefore(alert, document.querySelector('.card-body').firstChild);
+        }
+    }
+});
 
 document.getElementById('purchase_price').addEventListener('input', calculateProfit);
 document.getElementById('selling_price').addEventListener('input', calculateProfit);
@@ -190,8 +225,5 @@ document.getElementById('image').addEventListener('change', function(e) {
         document.querySelector('.custom-file-label').textContent = file.name;
     }
 });
-
-// Initialize profit calculation
-calculateProfit();
 </script>
 @endpush

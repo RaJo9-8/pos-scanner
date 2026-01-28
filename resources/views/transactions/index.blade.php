@@ -3,6 +3,10 @@
 @section('title', 'Transactions')
 @section('breadcrumb', 'Transactions')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+@endpush
+
 @section('content')
 <div class="row">
     <div class="col-12">
@@ -40,6 +44,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 <script>
 $(document).ready(function() {
     $('#transactions-table').DataTable({

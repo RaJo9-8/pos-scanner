@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>POS Scanner - @yield('title', 'Dashboard')</title>
     <link rel="stylesheet" href="{{ asset('dist/css/adminlte.min.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -134,6 +135,15 @@
                     </li>
                     @endif
 
+                    @if(auth()->user()->isSuperAdmin())
+                    <li class="nav-item">
+                        <a href="{{ route('users.trashed') }}" class="nav-link {{ request()->routeIs('users.trashed') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-trash"></i>
+                            <p>Trashed Users</p>
+                        </a>
+                    </li>
+                    @endif
+
                     @if(auth()->user()->level <= 3)
                     <li class="nav-item">
                         <a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
@@ -143,11 +153,52 @@
                     </li>
                     @endif
 
+                    @if(auth()->user()->isSuperAdmin())
+                    <li class="nav-item">
+                        <a href="{{ route('products.trashed') }}" class="nav-link {{ request()->routeIs('products.trashed') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-trash"></i>
+                            <p>Trashed Products</p>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(auth()->user()->canViewProducts())
+                    <li class="nav-header">PRODUCTS</li>
+                    <li class="nav-item">
+                        <a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-box"></i>
+                            <p>Products</p>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(auth()->user()->level <= 3)
+                    <li class="nav-header">INVENTORY</li>
+                    <li class="nav-item">
+                        <a href="{{ route('stock-in.index') }}" class="nav-link {{ request()->routeIs('stock-in.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-arrow-up"></i>
+                            <p>Barang Masuk</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('stock-out.index') }}" class="nav-link {{ request()->routeIs('stock-out.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-arrow-down"></i>
+                            <p>Barang Keluar</p>
+                        </a>
+                    </li>
+                    @endif
+
                     @if(auth()->user()->canManageTransactions())
                     <li class="nav-item">
-                        <a href="{{ route('transactions.index') }}" class="nav-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
+                        <a href="{{ route('transactions.create') }}" class="nav-link {{ request()->routeIs('transactions.create') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>New Transaction</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('transactions.index') }}" class="nav-link {{ request()->routeIs('transactions.index') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-shopping-cart"></i>
-                            <p>Transactions</p>
+                            <p>Transaction History</p>
                         </a>
                     </li>
                     @endif
@@ -161,7 +212,7 @@
                     </li>
                     @endif
 
-                    @if(auth()->user()->level <= 2 || auth()->user()->level == 5)
+                    @if(auth()->user()->canViewActivityLogs())
                     <li class="nav-item">
                         <a href="{{ route('activity-logs.index') }}" class="nav-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-history"></i>

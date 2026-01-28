@@ -4,36 +4,76 @@
     <meta charset="utf-8">
     <title>Invoice - {{ $transaction->invoice_number }}</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            margin: 0;
-            padding: 20px;
+        /* Preview styles - untuk tampilan di browser */
+        @media screen {
+            body {
+                font-family: 'Courier New', monospace;
+                font-size: 8px;
+                margin: 20px auto;
+                padding: 0; /* Full kertas tanpa padding */
+                width: 58mm;
+                max-width: 58mm;
+                box-sizing: border-box;
+                border: 1px solid #ccc;
+                background: white;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                overflow: hidden; /* Sembunyikan overflow */
+            }
         }
+        
+        /* Print styles - untuk hasil cetakan PDF */
+        @media print {
+            body {
+                font-family: 'Courier New', monospace;
+                font-size: 8px;
+                margin: 0;
+                padding: 0; /* Full kertas tanpa padding */
+                width: 58mm;
+                max-width: 58mm;
+                box-sizing: border-box;
+                overflow: visible; /* Tampilkan semua konten saat print */
+            }
+            
+            /* Pastikan semua konten terlihat saat print */
+            * {
+                overflow: visible !important;
+            }
+        }
+        
         .invoice-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 10px;
         }
         .invoice-header h2 {
             margin: 0;
+            font-size: 12px;
             color: #333;
         }
+        .invoice-header p {
+            margin: 5px 0;
+            font-size: 9px;
+        }
         .invoice-info {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .invoice-info table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 9px;
         }
         .invoice-info td {
             padding: 5px;
+            border: none;
         }
         .invoice-items {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .invoice-items table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 9px;
         }
         .invoice-items th,
         .invoice-items td {
@@ -49,11 +89,12 @@
             text-align: right;
         }
         .invoice-summary {
-            margin-top: 20px;
+            margin-top: 15px;
         }
         .invoice-summary table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 9px;
         }
         .invoice-summary td {
             padding: 5px;
@@ -63,19 +104,19 @@
         }
         .invoice-summary .total {
             font-weight: bold;
-            font-size: 14px;
+            font-size: 12px;
             border-top: 2px solid #333;
         }
         .footer {
-            margin-top: 30px;
+            margin-top: 20px;
             text-align: center;
-            font-size: 10px;
+            font-size: 8px;
             color: #666;
         }
     </style>
 </head>
 <body>
-    <div class="invoice-header">
+    <div >
         <h2>POS SCANNER</h2>
         <p>Invoice / Receipt</p>
     </div>
@@ -113,7 +154,7 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $item->product_name }}</td>
-                    <td>{{ $item->quantity }} {{ $item->product->unit }}</td>
+                    <td>{{ $item->quantity }}</td>
                     <td>{{ number_format($item->price, 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
                 </tr>

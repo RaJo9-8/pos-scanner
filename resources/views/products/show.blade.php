@@ -35,28 +35,14 @@
                     <div class="col-6">
                         <div class="description-block">
                             <span class="description-percentage text-warning">
-                                <i class="fas fa-exclamation"></i>
-                                {{ $product->min_stock }} {{ $product->unit }}
-                            </span>
-                            <h5 class="description-header">Min Stock</h5>
-                            <span class="description-text">Minimum Level</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Product Information</h3>
+                <h3 class="card-title">Product Details: {{ $product->name }}</h3>
                 <div class="card-tools">
-                    @if(auth()->user()->level <= 3)
                     <a href="{{ route('products.edit', $product) }}" class="btn btn-warning btn-sm">
                         <i class="fas fa-edit"></i> Edit
                     </a>
-                    @endif
                     <a href="{{ route('products.index') }}" class="btn btn-default btn-sm">
                         <i class="fas fa-arrow-left"></i> Back
                     </a>
@@ -67,25 +53,27 @@
                     <div class="col-md-6">
                         <table class="table table-borderless">
                             <tr>
-                                <td><strong>Product Name:</strong></td>
+                                <td><strong>Name:</strong></td>
                                 <td>{{ $product->name }}</td>
                             </tr>
                             <tr>
                                 <td><strong>Barcode:</strong></td>
-                                <td>
-                                    <code>{{ $product->barcode }}</code>
-                                    <button class="btn btn-sm btn-info ml-2" onclick="copyBarcode()">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </td>
+                                <td><code>{{ $product->barcode }}</code></td>
                             </tr>
                             <tr>
                                 <td><strong>Category:</strong></td>
                                 <td>{{ $product->category ?: '-' }}</td>
                             </tr>
                             <tr>
-                                <td><strong>Unit:</strong></td>
-                                <td>{{ $product->unit }}</td>
+                                <td><strong>Stock:</strong></td>
+                                <td>
+                                    <span class="badge {{ $product->stock <= $product->min_stock ? 'badge-danger' : 'badge-success' }}">
+                                        {{ $product->stock }} {{ $product->unit }}
+                                    </span>
+                                    @if($product->stock <= $product->min_stock)
+                                    <small class="text-danger">(Low Stock)</small>
+                                    @endif
+                                </td>
                             </tr>
                         </table>
                     </div>
@@ -93,56 +81,69 @@
                         <table class="table table-borderless">
                             <tr>
                                 <td><strong>Purchase Price:</strong></td>
-                                <td class="text-primary">{{ $product->formatted_purchase_price }}</td>
+                                <td>{{ $product->formatted_purchase_price }}</td>
                             </tr>
                             <tr>
                                 <td><strong>Selling Price:</strong></td>
-                                <td class="text-success">{{ $product->formatted_selling_price }}</td>
+                                <td>{{ $product->formatted_selling_price }}</td>
                             </tr>
                             <tr>
-                                <td><strong>Profit per Unit:</strong></td>
-                                <td class="text-info">{{ $product->formatted_profit }}</td>
+                                <td><strong>Profit:</strong></td>
+                                <td>
+                                    <span class="badge badge-info">
+                                        {{ $product->formatted_profit }}
+                                    </span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><strong>Profit Margin:</strong></td>
-                                <td>{{ $product->selling_price > 0 ? round(($product->profit / $product->selling_price) * 100, 2) : 0 }}%</td>
+                                <td><strong>Created At:</strong></td>
+                                <td>{{ $product->created_at->format('d M Y H:i:s') }}</td>
                             </tr>
                         </table>
                     </div>
                 </div>
 
                 @if($product->description)
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <h5>Description</h5>
-                        <p>{{ $product->description }}</p>
-                    </div>
+                <div class="mt-3">
+                    <h5>Description</h5>
+                    <p>{{ $product->description }}</p>
                 </div>
                 @endif
+            </div>
+        </div>
+    </div>
 
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <h5>Transaction History</h5>
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Invoice</th>
-                                        <th>Type</th>
-                                        <th>Quantity</th>
-                                        <th>Price</th>
-                                        <th>Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($product->transactionItems()->with('transaction')->latest()->limit(10)->get() as $item)
-                                    <tr>
-                                        <td>{{ $item->created_at->format('d M Y H:i') }}</td>
-                                        <td>
-                                            <a href="{{ route('transactions.show', $item->transaction) }}">
-                                                {{ $item->transaction->invoice_number }}
-                                            </a>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Product Image</h3>
+                <small class="text-muted">Click image to zoom</small>
+            </div>
+            <div class="card-body text-center">
+                <img src="{{ $product->image ? asset('storage/'.$product->image) : asset('dist/img/default-150x150.png') }}" 
+                     alt="{{ $product->name }}" 
+                     class="img-fluid zoomable" 
+                     style="max-height: 300px; cursor: zoom-in;"
+                     data-zoomable>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h4>Quick Actions</h4>
+            </div>
+            <div class="card-body">
+                <a href="{{ route('products.edit', $product) }}" class="btn btn-warning btn-sm btn-block mb-2">
+                    <i class="fas fa-edit"></i> Edit Product
+                </a>
+                
+                <form action="{{ route('products.destroy', $product) }}" method="POST" style="display: inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger btn-sm btn-block" onclick="return confirm('Are you sure you want to delete this product?')">
+                        <i class="fas fa-trash"></i> Delete Product
+                    </button>
+                </form>
                                         </td>
                                         <td>
                                             <span class="badge badge-success">Sale</span>
@@ -167,14 +168,3 @@
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-function copyBarcode() {
-    var barcode = '{{ $product->barcode }}';
-    navigator.clipboard.writeText(barcode).then(function() {
-        alert('Barcode copied to clipboard: ' + barcode);
-    });
-}
-</script>
-@endpush
