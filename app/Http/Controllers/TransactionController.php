@@ -9,7 +9,7 @@ use App\Models\Product;
 use App\Models\ActivityLog;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
-use PDF;
+use Dompdf\Dompdf;
 
 class TransactionController extends Controller
 {
@@ -146,11 +146,20 @@ class TransactionController extends Controller
         return view('transactions.show', compact('transaction'));
     }
 
-    public function print(Transaction $transaction)
+    public function print($id)
     {
+        $transaction = Transaction::findOrFail($id);
         $transaction->load(['transactionItems.product', 'user']);
         
-        $pdf = PDF::loadView('transactions.print', compact('transaction'));
+        // Kertas thermal standar 58mm x 200mm
+        // 58mm = 164.41 points, 200mm = 566.93 points
+        $customPaper = array(0, 0, 164.41, 566.93); // 58mm x 200mm in points
+        
+        $pdf = new Dompdf();
+        $pdf->loadHtml(view('transactions.print', compact('transaction'))->render());
+        $pdf->setPaper($customPaper, 'portrait');
+        $pdf->render();
+        
         return $pdf->stream('invoice_' . $transaction->invoice_number . '.pdf');
     }
 

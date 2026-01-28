@@ -29,7 +29,7 @@ class ProductController extends Controller
                 ->addColumn('action', function ($product) {
                     $buttons = '';
                     
-                    if (auth()->user()->level <= 3) {
+                    if (auth()->user()->canManageProducts()) {
                         $buttons .= '<a href="' . route('products.edit', $product) . '" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>';
                         $buttons .= '<button type="button" class="btn btn-sm btn-danger delete-product" data-id="' . $product->id . '"><i class="fas fa-trash"></i></button>';
                     }

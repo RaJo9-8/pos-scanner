@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>POS Scanner - @yield('title', 'Dashboard')</title>
     <link rel="stylesheet" href="{{ asset('dist/css/adminlte.min.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -161,6 +162,19 @@
                     </li>
                     @endif
 
+<<<<<<< HEAD
+=======
+                    @if(auth()->user()->canViewProducts())
+                    <li class="nav-header">PRODUCTS</li>
+                    <li class="nav-item">
+                        <a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-box"></i>
+                            <p>Products</p>
+                        </a>
+                    </li>
+                    @endif
+
+>>>>>>> 1d69cd9 (first commit)
                     @if(auth()->user()->level <= 3)
                     <li class="nav-header">INVENTORY</li>
                     <li class="nav-item">
@@ -179,9 +193,15 @@
 
                     @if(auth()->user()->canManageTransactions())
                     <li class="nav-item">
-                        <a href="{{ route('transactions.index') }}" class="nav-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
+                        <a href="{{ route('transactions.create') }}" class="nav-link {{ request()->routeIs('transactions.create') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>New Transaction</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('transactions.index') }}" class="nav-link {{ request()->routeIs('transactions.index') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-shopping-cart"></i>
-                            <p>Transactions</p>
+                            <p>Transaction History</p>
                         </a>
                     </li>
                     @endif

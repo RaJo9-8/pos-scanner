@@ -12,17 +12,19 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Product Management</h3>
+                <h3 class="card-title">Products</h3>
                 <div class="card-tools">
-                    @if(auth()->user()->level <= 3)
+                    @if(auth()->user()->canManageProducts())
                     <a href="{{ route('products.create') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i> Add Product
                     </a>
                     @endif
                     
+                    @if(auth()->user()->isSuperAdmin())
                     <a href="{{ route('products.trashed') }}" class="btn btn-warning btn-sm">
                         <i class="fas fa-trash"></i> Trashed
                     </a>
+                    @endif
                 </div>
             </div>
             <div class="card-body">

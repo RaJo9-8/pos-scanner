@@ -249,7 +249,7 @@ $(document).ready(function() {
 });
 
 function loadManualProducts() {
-    $.get('{{ route("products.search") }}', {q: ''}, function(data) {
+    $.get('{{ route("api.products.search") }}', {q: ''}, function(data) {
         let options = '<option value="">Select Product</option>';
         data.forEach(function(product) {
             options += '<option value="' + product.id + '" data-product=\'' + JSON.stringify(product) + '\'">' + 

@@ -86,7 +86,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('level:1,2,3')->group(function () {
+<<<<<<< HEAD
         Route::resource('products', ProductController::class);
+=======
+        Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
+        Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+        Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+        Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+        
+>>>>>>> 1d69cd9 (first commit)
         Route::get('/api/products/search', [ProductController::class, 'search'])->name('api.products.search');
         Route::get('/api/products/barcode/{barcode}', [ProductController::class, 'findByBarcode'])->name('api.products.barcode');
         
@@ -95,6 +104,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('stock-out', StockOutController::class);
         Route::get('/stock-in/get-product/{id}', [StockInController::class, 'getProduct'])->name('stock-in.get-product');
         Route::get('/stock-out/get-product/{id}', [StockOutController::class, 'getProduct'])->name('stock-out.get-product');
+<<<<<<< HEAD
+=======
+        
+        // Test route untuk debugging
+        Route::get('/test-products-create', function() {
+            return 'Products create route working! User level: ' . auth()->user()->level;
+        });
+    });
+
+    Route::middleware('level:1,2,3,4,5')->group(function () {
+        Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+>>>>>>> 1d69cd9 (first commit)
     });
 
     Route::middleware('level:1')->group(function () {
@@ -109,10 +131,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
         Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
         Route::get('/transactions/{transaction}/print', [TransactionController::class, 'print'])->name('transactions.print');
+        Route::get('/transactions/search-product', [TransactionController::class, 'searchProduct'])->name('transactions.search-product');
+        Route::get('/transactions/get-product-barcode/{barcode}', [TransactionController::class, 'getProductByBarcode'])->name('transactions.get-product-barcode');
     });
 
     Route::middleware('level:1,2,3,4')->group(function () {
         Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+        
+        // Test route untuk membuat transaksi dummy
+        Route::get('/test-create-transaction', function() {
+            $product = \App\Models\Product::first();
+            if (!$product) {
+                return "No products found in database";
+            }
+            
+            $transaction = \App\Models\Transaction::create([
+                'user_id' => auth()->id(),
+                'total_amount' => $product->selling_price,
+                'cash_amount' => $product->selling_price,
+                'change_amount' => 0,
+                'invoice_number' => 'INV-' . date('YmdHis') . '-TEST',
+                'notes' => 'Test transaction',
+                'status' => 'completed'
+            ]);
+            
+            \App\Models\TransactionItem::create([
+                'transaction_id' => $transaction->id,
+                'product_id' => $product->id,
+                'quantity' => 1,
+                'price' => $product->selling_price,
+                'subtotal' => $product->selling_price
+            ]);
+            
+            return "Test transaction created! Total transactions: " . \App\Models\Transaction::count();
+        });
     });
 
     Route::middleware('level:3')->group(function () {

@@ -104,6 +104,16 @@ class User extends Authenticatable
         return $this->level === 5;
     }
 
+    public function canViewProducts()
+    {
+        return in_array($this->level, [1, 2, 3, 4, 5]);
+    }
+
+    public function canManageProducts()
+    {
+        return in_array($this->level, [1, 2, 3]);
+    }
+
     public function canAccessAllData()
     {
         return in_array($this->level, [1, 2]);
