@@ -25,9 +25,6 @@
                         <button type="submit" class="btn btn-default btn-sm">
                             <i class="fas fa-filter"></i> Filter
                         </button>
-                        <a href="{{ route('reports.export-financial', ['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}" class="btn btn-success btn-sm ml-2">
-                            <i class="fas fa-download"></i> Export PDF
-                        </a>
                     </form>
                 </div>
             </div>
@@ -140,7 +137,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table class="table table-bordered table-striped">
+                                    <table id="financialTable" class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
                                                 <th>Product Name</th>
@@ -152,7 +149,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach(array_slice($profitByProduct, 0, 10) as $product)
+                                            @foreach($profitByProduct as $product)
                                             <tr>
                                                 <td>{{ $product['product_name'] }}</td>
                                                 <td>{{ $product['total_quantity'] }}</td>
@@ -181,6 +178,64 @@
 
 @push('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#financialTable').DataTable({
+        "responsive": true,
+        "lengthChange": true,
+        "autoWidth": false,
+        "ordering": true,
+        "info": true,
+        "pageLength": 25,
+        "buttons": [
+            {
+                extend: 'copy',
+                text: '<i class="fas fa-copy"></i> Copy',
+                className: 'btn btn-sm btn-secondary'
+            },
+            {
+                extend: 'csv',
+                text: '<i class="fas fa-file-csv"></i> CSV',
+                className: 'btn btn-sm btn-success'
+            },
+            {
+                extend: 'excel',
+                text: '<i class="fas fa-file-excel"></i> Excel',
+                className: 'btn btn-sm btn-success'
+            },
+            {
+                extend: 'pdf',
+                text: '<i class="fas fa-file-pdf"></i> PDF',
+                className: 'btn btn-sm btn-danger',
+                orientation: 'landscape',
+                pageSize: 'A4'
+            },
+            {
+                extend: 'print',
+                text: '<i class="fas fa-print"></i> Print',
+                className: 'btn btn-sm btn-primary'
+            },
+            {
+                extend: 'colvis',
+                text: '<i class="fas fa-columns"></i> Columns',
+                className: 'btn btn-sm btn-info'
+            }
+        ],
+        "dom": 'Bfrtip',
+        "language": {
+            "search": "Search:",
+            "lengthMenu": "Show _MENU_ entries",
+            "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+            "paginate": {
+                "first": "First",
+                "last": "Last",
+                "next": "Next",
+                "previous": "Previous"
+            }
+        }
+    });
+});
+</script>
 <script>
 // Financial Chart
 const financialCtx = document.getElementById('financialChart').getContext('2d');

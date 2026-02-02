@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\ActivityLog;
+use App\Models\StockIn;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
+use Picqer\Barcode\BarcodeGenerator;
+use Picqer\Barcode\BarcodeGeneratorHTML;
 
 class ProductController extends Controller
 {
@@ -25,6 +28,14 @@ class ProductController extends Controller
                         return '<img src="' . asset('storage/' . $product->image) . '" width="50" height="50" class="product-image" style="cursor: pointer;" onclick="showImageModal(\'' . asset('storage/' . $product->image) . '\', \'' . $product->name . '\')">';
                     }
                     return '<img src="' . asset('dist/img/default-150x150.png') . '" width="50" height="50" class="product-image" style="cursor: pointer;" onclick="showImageModal(\'' . asset('dist/img/default-150x150.png') . '\', \'Default Image\')">';
+                })
+                ->addColumn('barcode', function ($product) {
+                    $generator = new BarcodeGeneratorHTML();
+                    $barcode = $generator->getBarcode($product->barcode, $generator::TYPE_CODE_128);
+                    return '<div style="text-align: center;">
+                        <div>' . $barcode . '</div>
+                        <small style="font-size: 10px;">' . $product->barcode . '</small>
+                    </div>';
                 })
                 ->addColumn('action', function ($product) {
                     $buttons = '';
@@ -53,7 +64,7 @@ class ProductController extends Controller
                 ->addColumn('profit', function ($product) {
                     return $product->formatted_profit;
                 })
-                ->rawColumns(['action', 'stock_status', 'image', 'profit'])
+                ->rawColumns(['action', 'stock_status', 'image', 'barcode', 'profit'])
                 ->make(true);
         }
 
@@ -90,6 +101,21 @@ class ProductController extends Controller
         }
 
         $product = Product::create($data);
+
+        // Jika stok awal > 0, buat data stock in otomatis
+        if ($product->stock > 0) {
+            StockIn::create([
+                'code' => StockIn::generateCode(),
+                'product_id' => $product->id,
+                'user_id' => auth()->id(),
+                'quantity' => $product->stock,
+                'purchase_price' => $product->purchase_price,
+                'total_price' => $product->stock * $product->purchase_price,
+                'supplier' => 'Initial Stock',
+                'notes' => 'Otomatis dibuat saat tambah produk baru',
+                'date' => now(),
+            ]);
+        }
 
         ActivityLog::log('create', 'product', "Created product: {$product->name}", null, $data);
 
@@ -191,9 +217,15 @@ class ProductController extends Controller
         $product = Product::where('barcode', $barcode)->first();
         
         if (!$product) {
-            return response()->json(['error' => 'Product not found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found'
+            ], 404);
         }
 
-        return response()->json($product);
+        return response()->json([
+            'success' => true,
+            'product' => $product
+        ]);
     }
 }

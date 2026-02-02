@@ -14,33 +14,43 @@ class StockInController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $stockIn = StockIn::with(['product', 'user'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+            try {
+                $stockIn = StockIn::with(['product', 'user'])
+                    ->orderBy('created_at', 'desc')
+                    ->get();
 
-            return DataTables::of($stockIn)
-                ->addIndexColumn()
-                ->addColumn('product_name', function ($row) {
-                    return $row->product->name;
-                })
-                ->addColumn('user_name', function ($row) {
-                    return $row->user->name;
-                })
-                ->addColumn('date', function ($row) {
-                    return $row->date->format('d M Y');
-                })
-                ->addColumn('total_price', function ($row) {
-                    return 'Rp ' . $row->formatted_total_price;
-                })
-                ->addColumn('action', function ($row) {
-                    $btn = '<a href="' . route('stock-in.show', $row) . '" class="btn btn-info btn-sm"><i class="fas fa-eye"></i></a>';
-                    if (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()) {
-                        $btn .= ' <button class="btn btn-danger btn-sm delete-btn" data-id="' . $row->id . '"><i class="fas fa-trash"></i></button>';
-                    }
-                    return $btn;
-                })
-                ->rawColumns(['action'])
-                ->make(true);
+                return DataTables::of($stockIn)
+                    ->addIndexColumn()
+                    ->addColumn('product_name', function ($row) {
+                        return $row->product ? $row->product->name : 'N/A';
+                    })
+                    ->addColumn('user_name', function ($row) {
+                        return $row->user ? $row->user->name : 'N/A';
+                    })
+                    ->addColumn('date', function ($row) {
+                        return $row->date ? $row->date->format('d M Y') : 'N/A';
+                    })
+                    ->addColumn('purchase_price', function ($row) {
+                        return 'Rp ' . number_format($row->purchase_price, 0, ',', '.');
+                    })
+                    ->addColumn('total_price', function ($row) {
+                        return 'Rp ' . number_format($row->total_price, 0, ',', '.');
+                    })
+                    ->addColumn('supplier', function ($row) {
+                        return $row->supplier ?? 'N/A';
+                    })
+                    ->addColumn('action', function ($row) {
+                        $btn = '<a href="' . route('stock-in.show', $row) . '" class="btn btn-info btn-sm"><i class="fas fa-eye"></i></a>';
+                        if (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()) {
+                            $btn .= ' <button class="btn btn-danger btn-sm delete-btn" data-id="' . $row->id . '"><i class="fas fa-trash"></i></button>';
+                        }
+                        return $btn;
+                    })
+                    ->rawColumns(['action'])
+                    ->make(true);
+            } catch (\Exception $e) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
         }
 
         return view('stock-in.index');

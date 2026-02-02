@@ -23,12 +23,15 @@
                         <select id="transaction_id" name="transaction_id" class="form-control" required>
                             <option value="">Select Transaction</option>
                             @foreach($transactions as $transaction)
-                            <option value="{{ $transaction->id }}">
+                            <option value="{{ $transaction->id }}" {{ $selectedTransaction && $selectedTransaction->id == $transaction->id ? 'selected' : '' }}>
                                 {{ $transaction->invoice_number }} - {{ $transaction->user->name }} - 
                                 {{ $transaction->formatted_total_amount }} ({{ $transaction->created_at->format('d M Y') }})
                             </option>
                             @endforeach
                         </select>
+                        @if($selectedTransaction)
+                        <small class="text-info">Transaction pre-selected: {{ $selectedTransaction->invoice_number }}</small>
+                        @endif
                     </div>
 
                     <div id="transaction-items" style="display: none;">
@@ -102,14 +105,25 @@ $(document).ready(function() {
             updateReturnSummary();
         }
     });
+    
+    // Auto-load if transaction is pre-selected
+    @if($selectedTransaction)
+        loadTransactionItems({{ $selectedTransaction->id }});
+    @endif
 });
 
 function loadTransactionItems(transactionId) {
+    console.log('Loading items for transaction:', transactionId);
     $.get('{{ route("returns.get-transaction-items", ":id") }}'.replace(':id', transactionId))
         .done(function(data) {
+            console.log('Transaction items loaded:', data);
             transactionItems = data;
             renderTransactionItems();
             $('#transaction-items').show();
+        })
+        .fail(function(xhr) {
+            console.error('Failed to load transaction items:', xhr);
+            alert('Failed to load transaction items: ' + (xhr.responseJSON?.message || 'Unknown error'));
         });
 }
 

@@ -101,7 +101,7 @@ class User extends Authenticatable
 
     public function isManager()
     {
-        return $this->level === 5;
+        return $this->level == 5; // menggunakan == bukan === untuk handle string/int
     }
 
     public function canViewProducts()
@@ -126,7 +126,7 @@ class User extends Authenticatable
 
     public function canManageReturns()
     {
-        return $this->level === 3;
+        return $this->level == 3; // menggunakan == bukan === untuk handle string/int
     }
 
     public function canViewReports()
@@ -136,7 +136,7 @@ class User extends Authenticatable
 
     public function canViewActivityLogs()
     {
-        return in_array($this->level, [1, 2, 5]);
+        return in_array($this->level, [1, 2]);
     }
 
     public function canRestoreDeletedData()

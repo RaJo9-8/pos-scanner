@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Product;
+use App\Models\StockOut;
 use App\Models\ActivityLog;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
@@ -19,12 +20,16 @@ class TransactionController extends Controller
             $query = Transaction::with('user');
             
             return DataTables::of($query)
-                ->addColumn('action', function ($transaction) {
-                    $buttons = '';
-                    $buttons .= '<a href="' . route('transactions.show', $transaction) . '" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>';
-                    $buttons .= '<a href="' . route('transactions.print', $transaction) . '" class="btn btn-sm btn-success" target="_blank"><i class="fas fa-print"></i></a>';
+                ->addColumn('action', function($row){
+                    $btn = '<a href="'.route('transactions.show', $row->id).'" class="btn btn-info btn-sm"><i class="fas fa-eye"></i></a>';
+                    $btn .= '<a href="'.route('transactions.print', $row->id).'" class="btn btn-success btn-sm ml-1" target="_blank"><i class="fas fa-print"></i></a>';
                     
-                    return $buttons;
+                    // Add return button for leaders on completed transactions
+                    if (auth()->user()->canManageReturns() && $row->status == 'completed') {
+                        $btn .= '<a href="'.route('returns.create').'?transaction_id='.$row->id.'" class="btn btn-warning btn-sm ml-1" title="Return Transaction"><i class="fas fa-undo"></i></a>';
+                    }
+                    
+                    return $btn;
                 })
                 ->addColumn('formatted_total_amount', function ($transaction) {
                     return $transaction->formatted_total_amount;
@@ -118,6 +123,23 @@ class TransactionController extends Controller
 
             foreach ($transactionItems as $item) {
                 $transaction->transactionItems()->create($item);
+                
+                // Kurangi stok produk
+                $product = Product::find($item['product_id']);
+                if ($product) {
+                    $product->decrement('stock', $item['quantity']);
+                    
+                    // Buat data barang keluar otomatis
+                    StockOut::create([
+                        'code' => StockOut::generateCode(),
+                        'product_id' => $item['product_id'],
+                        'user_id' => auth()->id(),
+                        'quantity' => $item['quantity'],
+                        'reason' => 'Penjualan',
+                        'notes' => 'Otomatis dari transaksi ' . $transaction->invoice_number,
+                        'date' => now(),
+                    ]);
+                }
             }
 
             ActivityLog::log('create', 'transaction', "Created transaction: {$transaction->invoice_number}");

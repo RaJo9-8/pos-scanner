@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class StockOut extends Model
 {
+    protected $table = 'stock_out';
+    
     protected $fillable = [
         'code',
         'product_id',

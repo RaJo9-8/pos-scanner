@@ -7,9 +7,10 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Product;
 use App\Models\ReturnTransaction;
+use App\Models\StockIn;
+use App\Models\StockOut;
 use App\Models\User;
 use Carbon\Carbon;
-use PDF;
 
 class ReportController extends Controller
 {
@@ -37,12 +38,12 @@ class ReportController extends Controller
             ];
         });
 
-        $salesByPayment = $transactions->groupBy('payment_method')->map(function ($group) {
+        $salesByPayment = $transactions->groupBy('payment_method')->map(function ($group) use ($totalSales) {
             return [
                 'payment_method' => ucfirst($group->first()->payment_method),
                 'total_sales' => $group->sum('total_amount'),
                 'transaction_count' => $group->count(),
-                'percentage' => ($group->sum('total_amount') / $transactions->sum('total_amount')) * 100
+                'percentage' => $totalSales > 0 ? ($group->sum('total_amount') / $totalSales) * 100 : 0
             ];
         });
 
@@ -244,15 +245,15 @@ class ReportController extends Controller
         $totalSales = $transactions->sum('total_amount');
         $totalTransactions = $transactions->count();
 
-        $pdf = PDF::loadView('reports.exports.sales', compact(
+        $dompdf = new \Barryvdh\DomPDF\PDF(['defaultFont' => 'Arial']);
+        $dompdf->loadView('reports.exports.sales', compact(
             'transactions',
             'totalSales',
             'totalTransactions',
             'startDate',
             'endDate'
         ));
-
-        return $pdf->download('sales_report_' . $startDate->format('Y-m-d') . '_to_' . $endDate->format('Y-m-d') . '.pdf');
+        return $dompdf->download('sales_report_' . $startDate->format('Y-m-d') . '_to_' . $endDate->format('Y-m-d') . '.pdf');
     }
 
     public function exportFinancial(Request $request)
@@ -283,7 +284,8 @@ class ReportController extends Controller
 
         $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
 
-        $pdf = PDF::loadView('reports.exports.financial', compact(
+        $dompdf = new \Barryvdh\DomPDF\PDF(['defaultFont' => 'Arial']);
+        $dompdf->loadView('reports.exports.financial', compact(
             'transactions',
             'totalRevenue',
             'totalCost',
@@ -292,7 +294,164 @@ class ReportController extends Controller
             'startDate',
             'endDate'
         ));
+        return $dompdf->download('financial_report_' . $startDate->format('Y-m-d') . '_to_' . $endDate->format('Y-m-d') . '.pdf');
+    }
 
-        return $pdf->download('financial_report_' . $startDate->format('Y-m-d') . '_to_' . $endDate->format('Y-m-d') . '.pdf');
+    public function stockIn(Request $request)
+    {
+        $startDate = $request->get('start_date', Carbon::now()->startOfMonth());
+        $endDate = $request->get('end_date', Carbon::now()->endOfDay());
+        
+        $stockIns = StockIn::with(['product', 'user'])
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'desc')
+            ->get();
+
+        $totalItems = $stockIns->sum('quantity');
+        $totalValue = $stockIns->sum('total_price');
+        $averagePrice = $totalItems > 0 ? $totalValue / $totalItems : 0;
+
+        $stockInsByProduct = $stockIns->groupBy('product_id')->map(function ($group) {
+            return [
+                'product' => $group->first()->product,
+                'total_quantity' => $group->sum('quantity'),
+                'total_value' => $group->sum('total_price'),
+                'average_price' => $group->sum('quantity') > 0 ? $group->sum('total_price') / $group->sum('quantity') : 0
+            ];
+        });
+
+        $stockInsBySupplier = $stockIns->groupBy('supplier')->map(function ($group) {
+            return [
+                'supplier' => $group->first()->supplier ?: 'Unknown',
+                'total_quantity' => $group->sum('quantity'),
+                'total_value' => $group->sum('total_price'),
+                'transaction_count' => $group->count()
+            ];
+        });
+
+        $dailyStockIns = $stockIns->groupBy(function ($stockIn) {
+            return $stockIn->date->format('Y-m-d');
+        })->map(function ($group) {
+            return [
+                'date' => $group->first()->date->format('Y-m-d'),
+                'total_quantity' => $group->sum('quantity'),
+                'total_value' => $group->sum('total_price'),
+                'transaction_count' => $group->count()
+            ];
+        });
+
+        return view('reports.stock-in', compact(
+            'stockIns',
+            'totalItems',
+            'totalValue',
+            'averagePrice',
+            'stockInsByProduct',
+            'stockInsBySupplier',
+            'dailyStockIns',
+            'startDate',
+            'endDate'
+        ));
+    }
+
+    public function stockOut(Request $request)
+    {
+        $startDate = $request->get('start_date', Carbon::now()->startOfMonth());
+        $endDate = $request->get('end_date', Carbon::now()->endOfDay());
+        
+        $stockOuts = StockOut::with(['product', 'user'])
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'desc')
+            ->get();
+
+        $totalItems = $stockOuts->sum('quantity');
+        $stockOutsByProduct = $stockOuts->groupBy('product_id')->map(function ($group) {
+            return [
+                'product' => $group->first()->product,
+                'total_quantity' => $group->sum('quantity'),
+                'transaction_count' => $group->count()
+            ];
+        });
+
+        $stockOutsByReason = $stockOuts->groupBy('reason')->map(function ($group) {
+            return [
+                'reason' => $group->first()->reason ?: 'Unknown',
+                'total_quantity' => $group->sum('quantity'),
+                'transaction_count' => $group->count()
+            ];
+        });
+
+        $dailyStockOuts = $stockOuts->groupBy(function ($stockOut) {
+            return $stockOut->date->format('Y-m-d');
+        })->map(function ($group) {
+            return [
+                'date' => $group->first()->date->format('Y-m-d'),
+                'total_quantity' => $group->sum('quantity'),
+                'transaction_count' => $group->count()
+            ];
+        });
+
+        return view('reports.stock-out', compact(
+            'stockOuts',
+            'totalItems',
+            'stockOutsByProduct',
+            'stockOutsByReason',
+            'dailyStockOuts',
+            'startDate',
+            'endDate'
+        ));
+    }
+
+    public function returnReport(Request $request)
+    {
+        $startDate = $request->get('start_date', Carbon::now()->startOfMonth());
+        $endDate = $request->get('end_date', Carbon::now()->endOfDay());
+        
+        $returns = ReturnTransaction::with(['transaction.user', 'user'])
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $totalReturns = $returns->count();
+        $totalAmount = $returns->sum('total_amount');
+        $averageReturn = $totalReturns > 0 ? $totalAmount / $totalReturns : 0;
+
+        $returnsByStatus = $returns->groupBy('status')->map(function ($group) use ($totalReturns) {
+            return [
+                'status' => ucfirst($group->first()->status),
+                'count' => $group->count(),
+                'total_amount' => $group->sum('total_amount'),
+                'percentage' => $totalReturns > 0 ? ($group->count() / $totalReturns) * 100 : 0
+            ];
+        });
+
+        $returnsByReason = $returns->groupBy('reason')->map(function ($group) {
+            return [
+                'reason' => $group->first()->reason_text,
+                'count' => $group->count(),
+                'total_amount' => $group->sum('total_amount')
+            ];
+        });
+
+        $dailyReturns = $returns->groupBy(function ($return) {
+            return $return->created_at->format('Y-m-d');
+        })->map(function ($group) {
+            return [
+                'date' => $group->first()->created_at->format('Y-m-d'),
+                'count' => $group->count(),
+                'total_amount' => $group->sum('total_amount')
+            ];
+        });
+
+        return view('reports.return', compact(
+            'returns',
+            'totalReturns',
+            'totalAmount',
+            'averageReturn',
+            'returnsByStatus',
+            'returnsByReason',
+            'dailyReturns',
+            'startDate',
+            'endDate'
+        ));
     }
 }

@@ -7,6 +7,14 @@
     <title>POS Scanner - @yield('title', 'Dashboard')</title>
     <link rel="stylesheet" href="{{ asset('dist/css/adminlte.min.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- Font Awesome -->
+    <link rel="stylesheet" href="{{ asset('plugins/fontawesome-free/css/all.min.css') }}">
+    <!-- AdminLTE Theme style -->
+    <link rel="stylesheet" href="{{ asset('dist/css/adminlte.min.css') }}">
+<link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+<link rel="stylesheet" href="{{ asset('plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+
     <style>
         .brand-link {
             margin-right: 1rem;
@@ -212,15 +220,6 @@
                     </li>
                     @endif
 
-                    @if(auth()->user()->canViewActivityLogs())
-                    <li class="nav-item">
-                        <a href="{{ route('activity-logs.index') }}" class="nav-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-history"></i>
-                            <p>Activity Logs</p>
-                        </a>
-                    </li>
-                    @endif
-
                     @if(auth()->user()->isManager())
                     <li class="nav-header">REPORTS</li>
                     <li class="nav-item">
@@ -237,8 +236,26 @@
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('reports.products') }}" class="nav-link {{ request()->routeIs('reports.products') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-chart-bar"></i>
-                            <p>Product Report</p>
+                            <i class="nav-icon fas fa-box"></i>
+                            <p>Inventory Report</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('reports.stock-in') }}" class="nav-link {{ request()->routeIs('reports.stock-in') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>Stock In Report</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('reports.stock-out') }}" class="nav-link {{ request()->routeIs('reports.stock-out') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-minus-circle"></i>
+                            <p>Stock Out Report</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('reports.return') }}" class="nav-link {{ request()->routeIs('reports.return') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-undo"></i>
+                            <p>Return Report</p>
                         </a>
                     </li>
                     @endif
@@ -328,13 +345,50 @@
     </aside>
 </div>
 
-<script src="{{ asset('dist/js/adminlte.min.js') }}"></script>
+<!-- jQuery first, then AdminLTE -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ asset('dist/js/adminlte.min.js') }}"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<!-- jQuery -->
+<script src="{{ asset('plugins/jquery/jquery.min.js') }}"></script>
+<!-- Bootstrap 4 -->
+<script src="{{ asset('plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<!-- AdminLTE App -->
+<script src="{{ asset('dist/js/adminlte.min.js') }}"></script>
+<script src="{{ asset('plugins/datatables/jquery.dataTables.min.js') }}"></script>
+<script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
+<script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('plugins/datatables-buttons/js/dataTables.buttons.min.js') }}"></script>
+<script src="{{ asset('plugins/datatables-buttons/js/buttons.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('plugins/jszip/jszip.min.js') }}"></script>
+<script src="{{ asset('plugins/pdfmake/pdfmake.min.js') }}"></script>
+<script src="{{ asset('plugins/pdfmake/vfs_fonts.js') }}"></script>
+<script src="{{ asset('plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
+<script src="{{ asset('plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
+<script src="{{ asset('plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
+
+<script>
+  $(function () {
+    $("#example1").DataTable({
+      "responsive": true, "lengthChange": false, "autoWidth": false,
+      "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
+    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+    $('#example2').DataTable({
+      "paging": true,
+      "lengthChange": false,
+      "searching": false,
+      "ordering": true,
+      "info": true,
+      "autoWidth": false,
+      "responsive": true,
+    });
+  });
+</script>
 @stack('scripts')
 
 <script>

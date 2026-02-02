@@ -93,7 +93,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table class="table table-bordered table-sm">
+                                    <table id="categoryTable" class="table table-bordered table-sm">
                                         <thead>
                                             <tr>
                                                 <th>Category</th>
@@ -129,7 +129,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table class="table table-bordered table-striped">
+                                    <table id="lowStockTable" class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
                                                 <th>Product Name</th>
@@ -180,7 +180,7 @@
                                     {{ $outOfStockProducts->count() }} products are out of stock and need immediate restocking.
                                 </div>
                                 <div class="table-responsive">
-                                    <table class="table table-bordered table-striped">
+                                    <table id="outOfStockTable" class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
                                                 <th>Product Name</th>
@@ -224,7 +224,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table class="table table-bordered table-striped">
+                                    <table id="topSellingTable" class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
                                                 <th>Product Name</th>
@@ -260,3 +260,100 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    // Category Table
+    $('#categoryTable').DataTable({
+        responsive: true,
+        lengthChange: true,
+        autoWidth: false,
+        ordering: true,
+        info: true,
+        pageLength: 25,
+        dom: 'Bfrtip',
+        buttons: [
+            {extend: 'copy', text: '<i class="fas fa-copy"></i> Copy', className: 'btn btn-sm btn-secondary'},
+            {extend: 'csv', text: '<i class="fas fa-file-csv"></i> CSV', className: 'btn btn-sm btn-success'},
+            {extend: 'excel', text: '<i class="fas fa-file-excel"></i> Excel', className: 'btn btn-sm btn-success'},
+            {extend: 'pdf', text: '<i class="fas fa-file-pdf"></i> PDF', className: 'btn btn-sm btn-danger', orientation: 'landscape', pageSize: 'A4'},
+            {extend: 'print', text: '<i class="fas fa-print"></i> Print', className: 'btn btn-sm btn-primary'},
+            {extend: 'colvis', text: '<i class="fas fa-columns"></i> Columns', className: 'btn btn-sm btn-info'}
+        ],
+        language: {
+            "search": "Search:", "lengthMenu": "Show _MENU_ entries", "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+            "paginate": {"first": "First", "last": "Last", "next": "Next", "previous": "Previous"}
+        }
+    });
+
+    // Low Stock Table
+    $('#lowStockTable').DataTable({
+        responsive: true,
+        lengthChange: true,
+        autoWidth: false,
+        ordering: true,
+        info: true,
+        pageLength: 25,
+        dom: 'Bfrtip',
+        buttons: [
+            {extend: 'copy', text: '<i class="fas fa-copy"></i> Copy', className: 'btn btn-sm btn-secondary', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'csv', text: '<i class="fas fa-file-csv"></i> CSV', className: 'btn btn-sm btn-success', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'excel', text: '<i class="fas fa-file-excel"></i> Excel', className: 'btn btn-sm btn-success', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'pdf', text: '<i class="fas fa-file-pdf"></i> PDF', className: 'btn btn-sm btn-danger', orientation: 'landscape', pageSize: 'A4', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'print', text: '<i class="fas fa-print"></i> Print', className: 'btn btn-sm btn-primary', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'colvis', text: '<i class="fas fa-columns"></i> Columns', className: 'btn btn-sm btn-info'}
+        ],
+        language: {
+            "search": "Search:", "lengthMenu": "Show _MENU_ entries", "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+            "paginate": {"first": "First", "last": "Last", "next": "Next", "previous": "Previous"}
+        }
+    });
+
+    // Out of Stock Table
+    $('#outOfStockTable').DataTable({
+        responsive: true,
+        lengthChange: true,
+        autoWidth: false,
+        ordering: true,
+        info: true,
+        pageLength: 25,
+        dom: 'Bfrtip',
+        buttons: [
+            {extend: 'copy', text: '<i class="fas fa-copy"></i> Copy', className: 'btn btn-sm btn-secondary', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'csv', text: '<i class="fas fa-file-csv"></i> CSV', className: 'btn btn-sm btn-success', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'excel', text: '<i class="fas fa-file-excel"></i> Excel', className: 'btn btn-sm btn-success', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'pdf', text: '<i class="fas fa-file-pdf"></i> PDF', className: 'btn btn-sm btn-danger', orientation: 'landscape', pageSize: 'A4', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'print', text: '<i class="fas fa-print"></i> Print', className: 'btn btn-sm btn-primary', exportOptions: {columns: ':visible:not(:last-child)'}},
+            {extend: 'colvis', text: '<i class="fas fa-columns"></i> Columns', className: 'btn btn-sm btn-info'}
+        ],
+        language: {
+            "search": "Search:", "lengthMenu": "Show _MENU_ entries", "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+            "paginate": {"first": "First", "last": "Last", "next": "Next", "previous": "Previous"}
+        }
+    });
+
+    // Top Selling Table
+    $('#topSellingTable').DataTable({
+        responsive: true,
+        lengthChange: true,
+        autoWidth: false,
+        ordering: true,
+        info: true,
+        pageLength: 25,
+        dom: 'Bfrtip',
+        buttons: [
+            {extend: 'copy', text: '<i class="fas fa-copy"></i> Copy', className: 'btn btn-sm btn-secondary'},
+            {extend: 'csv', text: '<i class="fas fa-file-csv"></i> CSV', className: 'btn btn-sm btn-success'},
+            {extend: 'excel', text: '<i class="fas fa-file-excel"></i> Excel', className: 'btn btn-sm btn-success'},
+            {extend: 'pdf', text: '<i class="fas fa-file-pdf"></i> PDF', className: 'btn btn-sm btn-danger', orientation: 'landscape', pageSize: 'A4'},
+            {extend: 'print', text: '<i class="fas fa-print"></i> Print', className: 'btn btn-sm btn-primary'},
+            {extend: 'colvis', text: '<i class="fas fa-columns"></i> Columns', className: 'btn btn-sm btn-info'}
+        ],
+        language: {
+            "search": "Search:", "lengthMenu": "Show _MENU_ entries", "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+            "paginate": {"first": "First", "last": "Last", "next": "Next", "previous": "Previous"}
+        }
+    });
+});
+</script>

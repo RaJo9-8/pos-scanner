@@ -7,6 +7,7 @@ use App\Models\ReturnTransaction;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Product;
+use App\Models\StockIn;
 use App\Models\ActivityLog;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
@@ -18,12 +19,15 @@ class ReturnController extends Controller
         if ($request->ajax()) {
             $query = ReturnTransaction::with(['transaction.user', 'user']);
             
+            // Debug: Log query count
+            \Log::info('Returns count: ' . $query->count());
+            
             return DataTables::of($query)
                 ->addColumn('action', function ($return) {
                     $buttons = '';
                     $buttons .= '<a href="' . route('returns.show', $return) . '" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>';
                     
-                    if (auth()->user()->isLeader() && $return->status == 'pending') {
+                    if (auth()->user()->canManageReturns() && $return->status == 'pending') {
                         $buttons .= '<button type="button" class="btn btn-sm btn-success ml-1" onclick="approveReturn(' . $return->id . ')"><i class="fas fa-check"></i></button>';
                         $buttons .= '<button type="button" class="btn btn-sm btn-danger ml-1" onclick="rejectReturn(' . $return->id . ')"><i class="fas fa-times"></i></button>';
                     }
@@ -34,13 +38,13 @@ class ReturnController extends Controller
                     return $return->formatted_total_amount;
                 })
                 ->addColumn('transaction_invoice', function ($return) {
-                    return $return->transaction->invoice_number;
+                    return $return->transaction ? $return->transaction->invoice_number : 'N/A';
                 })
                 ->addColumn('customer_name', function ($return) {
-                    return $return->transaction->user->name;
+                    return $return->transaction && $return->transaction->user ? $return->transaction->user->name : 'N/A';
                 })
                 ->addColumn('leader_name', function ($return) {
-                    return $return->user->name;
+                    return $return->user ? $return->user->name : 'N/A';
                 })
                 ->addColumn('status_badge', function ($return) {
                     $badgeClass = $return->status == 'approved' ? 'success' : 
@@ -64,7 +68,13 @@ class ReturnController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         
-        return view('returns.create', compact('transactions'));
+        $selectedTransaction = null;
+        if (request()->has('transaction_id')) {
+            $selectedTransaction = Transaction::with('transactionItems.product')
+                ->findOrFail(request('transaction_id'));
+        }
+        
+        return view('returns.create', compact('transactions', 'selectedTransaction'));
     }
 
     public function store(Request $request)
@@ -161,6 +171,18 @@ class ReturnController extends Controller
             foreach ($returnItems as $item) {
                 $product = Product::findOrFail($item['product_id']);
                 $product->increment('stock', $item['quantity']);
+                
+                // Buat data barang masuk otomatis saat return disetujui
+                StockIn::create([
+                    'code' => StockIn::generateCode(),
+                    'product_id' => $item['product_id'],
+                    'user_id' => auth()->id(),
+                    'quantity' => $item['quantity'],
+                    'purchase_price' => $product->purchase_price,
+                    'total_price' => $product->purchase_price * $item['quantity'],
+                    'supplier' => 'Return Barang',
+                    'date' => now(),
+                ]);
             }
 
             $returnTransaction->update([

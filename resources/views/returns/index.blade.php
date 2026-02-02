@@ -42,12 +42,21 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 <script>
 $(document).ready(function() {
+    console.log('Initializing Returns DataTable...');
+    
     $('#returns-table').DataTable({
         processing: true,
         serverSide: true,
-        ajax: '{{ route("returns.index") }}',
+        ajax: {
+            url: '{{ route("returns.index") }}',
+            error: function(xhr, error, code) {
+                console.error('DataTables error:', xhr, error, code);
+                alert('Error loading returns data: ' + (xhr.responseJSON?.message || error));
+            }
+        },
         columns: [
             {data: 'return_number', name: 'return_number'},
             {data: 'transaction_invoice', name: 'transaction.invoice_number'},
@@ -63,7 +72,71 @@ $(document).ready(function() {
             },
             {data: 'action', name: 'action', orderable: false, searchable: false}
         ],
-        order: [[7, 'desc']]
+        order: [[7, 'desc']],
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'copy',
+                text: '<i class="fas fa-copy"></i> Copy',
+                className: 'btn btn-sm btn-secondary',
+                exportOptions: {
+                    columns: ':visible:not(:last-child)'
+                }
+            },
+            {
+                extend: 'csv',
+                text: '<i class="fas fa-file-csv"></i> CSV',
+                className: 'btn btn-sm btn-success',
+                exportOptions: {
+                    columns: ':visible:not(:last-child)'
+                }
+            },
+            {
+                extend: 'excel',
+                text: '<i class="fas fa-file-excel"></i> Excel',
+                className: 'btn btn-sm btn-success',
+                exportOptions: {
+                    columns: ':visible:not(:last-child)'
+                }
+            },
+            {
+                extend: 'pdf',
+                text: '<i class="fas fa-file-pdf"></i> PDF',
+                className: 'btn btn-sm btn-danger',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                exportOptions: {
+                    columns: ':visible:not(:last-child)'
+                }
+            },
+            {
+                extend: 'print',
+                text: '<i class="fas fa-print"></i> Print',
+                className: 'btn btn-sm btn-primary',
+                exportOptions: {
+                    columns: ':visible:not(:last-child)'
+                }
+            },
+            {
+                extend: 'colvis',
+                text: '<i class="fas fa-columns"></i> Columns',
+                className: 'btn btn-sm btn-info'
+            }
+        ],
+        language: {
+            "search": "Search:",
+            "lengthMenu": "Show _MENU_ entries",
+            "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+            "paginate": {
+                "first": "First",
+                "last": "Last",
+                "next": "Next",
+                "previous": "Previous"
+            }
+        },
+        initComplete: function() {
+            console.log('Returns DataTable initialized successfully');
+        }
     });
 });
 
@@ -77,7 +150,7 @@ function approveReturn(id) {
             },
             success: function(response) {
                 $('#returns-table').DataTable().ajax.reload();
-                alert(response.success);
+                alert(response.success || response.message || 'Return request approved successfully');
             },
             error: function(xhr) {
                 alert('Error approving return request');
@@ -96,7 +169,7 @@ function rejectReturn(id) {
             },
             success: function(response) {
                 $('#returns-table').DataTable().ajax.reload();
-                alert(response.success);
+                alert(response.success || response.message || 'Return request rejected successfully');
             },
             error: function(xhr) {
                 alert('Error rejecting return request');

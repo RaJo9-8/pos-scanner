@@ -115,7 +115,7 @@
                 <div class="row">
                     <div class="col-6">
                         <div class="description-block border-right">
-                            <span class="description-percentage text-info"><i class="fas fa-caret-up"></i> {{ $lastMonthSales > 0 ? round((($thisMonthProfit - ($thisMonthSales * 0.3)) / ($thisMonthSales * 0.3)) * 100, 1) : 0 }}%</span>
+                            <span class="description-percentage text-info"><i class="fas fa-caret-up"></i> {{ $lastMonthSales > 0 && ($thisMonthSales * 0.3) > 0 ? round((($thisMonthProfit - ($thisMonthSales * 0.3)) / ($thisMonthSales * 0.3)) * 100, 1) : 0 }}%</span>
                             <h5 class="description-header">Rp {{ number_format($thisMonthProfit, 0, ',', '.') }}</h5>
                             <span class="description-text">This Month Profit</span>
                         </div>
